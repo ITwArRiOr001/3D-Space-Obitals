@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Solar System with Enhanced Elliptical Orbits</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- ✅ dat.GUI Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/loaders/GLTFLoader.min.js"></script>
+
+</head>
+<body>
+
+<!-- Pre-Loading Informative Page -->
+<div id="preLoadingScreen">
+  <div class="pre-loading-content">
+    <h1>🌌 3D Solar System: Exploring Celestial Motion</h1>
+    <p class="intro-text">
+      Step into a thoughtfully crafted 3D experience of our Solar System — a self-initiated project developed as part of a learning journey in computer science and web technologies. This experience brings planetary motion to life through real-time visualization and intuitive design.
+    </p>
+    
+    <div class="info-sections">
+      <div class="info-section">
+        <h2>🔭 Purpose & Vision</h2>
+        <p>
+          This project bridges theoretical astronomy with visual exploration. It aims to simplify the understanding of celestial motion for students, enthusiasts, and educators by making it more tangible, engaging, and accessible. It aims to simplify, not sensationalize — inspiring learning through experience.
+        </p>
+      </div>
+      
+      <div class="info-section">
+        <h2>🛠️ Technical Foundation</h2>
+        <p>
+          Built using Three.js and WebGL, the simulation features accurate elliptical orbits, responsive camera controls, subtle particle effects, and ambient sound layering — all designed with a focus on clarity, interactivity, smooth performance and developed independently as part of an academic learning process.
+        </p>
+      </div>
+      
+      <div class="info-section">
+        <h2>📚 Learning-Oriented Design</h2>
+        <p>
+          An integrated information panel offers real-time planetary facts and curated links for further exploration. Whether you're observing or studying, this tool is designed to support deeper understanding through immersion.
+        </p>
+      </div>
+    </div>
+    
+    <div class="usage-guide">
+      <h2>🧭 How to Navigate</h2>
+      <ul>
+        <li>🔍 <strong>Zoom In/Out</strong>: Use your touchpad scroll.</li>
+        <li>🌀 <strong>Rotate View</strong>: Drag to orbit around scene.</li>
+        <li>🧭 <strong>Pan Camera</strong>: Finger drag to move the Camera view.</li>
+        <li>📸 <strong>Take Screenshots</strong>: For a quick capture.</li>
+        <li>💡 <strong>Explore Information</strong>: Click on planets.</li>
+      </ul>
+      <p>Enjoy your journey — this space is yours to explore, learn, and get inspired.</p>
+    </div>
+    
+    <button id="proceedButton" class="proceed-button">
+      🚀 Begin the Journey
+    </button>
+  </div>
+</div>
+
+<!-- Loading Screen -->
+<div id="loadingScreen" class="hidden">
+  <canvas id="loadingCanvas"></canvas>
+  <div class="loading-text">ORBITAL SYSTEMS..</div>
+</div>
+
+<!-- Navigation and Info Panel -->
+<button class="nav-toggle"></button>
+<div class="nav-menu">
+  <button class="nav-option" id="nav1">Sun</button>
+  <button class="nav-option" id="nav2">Mercury</button>
+  <button class="nav-option" id="nav3">Venus</button>
+  <button class="nav-option" id="nav4">Earth</button>
+  <button class="nav-option" id="nav5">Moon</button>
+  <button class="nav-option" id="nav6">Mars</button>
+  <button class="nav-option" id="nav7">Jupiter</button>
+  <button class="nav-option" id="nav8">Saturn</button>
+  <button class="nav-option" id="nav9">Uranus</button>
+  <button class="nav-option" id="nav10">Neptune</button>
+  <button class="nav-option" id="nav11">Galaxy</button>
+  <button class="nav-option" id="nav12">Toggle Orbits</button>
+</div>
+
+<div id="info-panel">
+  <div class="info-header">
+    <h2 id="info-name">Object Name</h2>
+    <button class="dropdown-toggle">▼</button>
+  </div>
+  <div class="info-content">
+    <p id="info-description">Description of the celestial body.</p>
+    <ul id="info-facts"></ul>
+    <a id="info-link" href="#" target="_blank">Click for More Information</a>
+  </div>
+</div>
+
+<!-- Screenshot Button -->
+<button id="screenshotBtn" class="screenshot-button"></button>
+
+<script src="script.js"></script>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const gui = new dat.GUI();
+    const controlsPanel = {
+      Pause: false,
+      Reverse: false,
+      Speed: 1
+    };
+    
+    gui.add(controlsPanel, 'Pause').onChange(value => {
+      window.isPaused = value;
+    });
+    
+    gui.add(controlsPanel, 'Reverse').onChange(value => {
+      window.reverse = value;
+    });
+    
+    gui.add(controlsPanel, 'Speed', { '1x': 1, '2x': 2, '4x': 4 }).onChange(value => {
+      window.speedMultiplier = value;
+    });
+    
+    gui.domElement.style.position = 'fixed';
+    gui.domElement.style.top = 'auto';
+    gui.domElement.style.bottom = '30px';
+    gui.domElement.style.left = '10px';
+    gui.domElement.style.right = 'auto';
+    gui.domElement.style.zIndex = '800';
+
+// Screenshot button functionality
+const screenshotBtn = document.getElementById('screenshotBtn');
+
+// Load audio
+const clickSound = new Audio('assets/sounds/mixkit-nikon-camera-shutter-1434.wav'); // Replace with your own sound path
+
+screenshotBtn.addEventListener('click', () => {
+  // Play click sound
+  clickSound.currentTime = 0; // Rewind to start in case it's played rapidly
+  clickSound.play();
+  
+  if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+    // Save original renderer state
+    const originalPreserve = renderer.preserveDrawingBuffer;
+    const originalClearColor = renderer.getClearColor(new THREE.Color());
+    const originalClearAlpha = renderer.getClearAlpha();
+    
+    // Set up for screenshot
+    renderer.preserveDrawingBuffer = true; // Retain canvas frame
+    renderer.setClearColor(0x000000, 0); // Transparent black background
+    renderer.clear(); // Reset canvas buffer
+    renderer.render(scene, camera); // Render fresh frame
+    
+    // Create a new canvas for the watermark
+    const canvas = document.createElement('canvas');
+    canvas.width = renderer.domElement.width;
+    canvas.height = renderer.domElement.height;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw the rendered scene onto the new canvas
+    ctx.drawImage(renderer.domElement, 0, 0);
+    
+    // Add watermark text
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Ayaan Khan', canvas.width - 10, canvas.height - 10); // Bottom-right
+    
+    // Capture screenshot with watermark
+    const screenshot = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = screenshot;
+    // Use a unique file name with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.download = `planet_view_${timestamp}.png`;
+    link.click();
+    
+    // Restore original renderer state
+    renderer.setClearColor(originalClearColor, originalClearAlpha);
+    renderer.preserveDrawingBuffer = originalPreserve;
+  } else {
+    console.error('Renderer, scene, or camera is not defined.');
+  }
+});
+  });
+</script>
+
+</body>
+</html>
